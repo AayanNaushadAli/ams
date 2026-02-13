@@ -76,7 +76,7 @@ export const authOptions: NextAuthOptions = {
                 } else {
                     // User deleted from DB — invalidate session
                     token.id = undefined as unknown as string;
-                    token.role = undefined as unknown as string;
+                    token.role = undefined as unknown as typeof token.role;
                 }
             }
             return token;
