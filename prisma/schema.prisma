@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A student can be enrolled in many classes
+  enrollments Enrollment[]
+
+  // A teacher can teach many classes
+  teachingClasses Class[] @relation("TeacherClasses")
+
+  attendanceRecords Attendance[]
+}
+
+// Each class represents a subject-class, e.g. "CS101 - Section A"
+model Class {
+  id        String   @id @default(cuid())
+  name      String   // e.g., "Data Structures"
+  code      String   @unique // e.g., "CS201-A"
+  createdAt DateTime @default(now())
+
+  teacher   User?    @relation("TeacherClasses", fields: [teacherId], references: [id])
+  teacherId String?
+
+  enrollments       Enrollment[]
+  attendanceRecords Attendance[]
+}
+
+// Many-to-many: students enrolled in classes
+model Enrollment {
+  id        String   @id @default(cuid())
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId   String
+  enrolledAt DateTime @default(now())
+
+  @@unique([studentId, classId]) // No duplicate enrollment
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  date      DateTime
+  status    AttendanceStatus
+
+  student   User    @relation(fields: [studentId], references: [id])
+  studentId String
+
+  class     Class   @relation(fields: [classId], references: [id])
+  classId   String
+
+  @@unique([date, studentId, classId]) // One record per student per class per day
+}
